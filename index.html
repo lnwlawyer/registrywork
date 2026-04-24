@@ -1,0 +1,771 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ปริมาณงานฝ่ายทะเบียน สำนักงานที่ดิน</title>
+  
+  <!-- เพิ่ม PWA Meta Tags -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#1e3a8a">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  
+  <!-- โหลด React และ ReactDOM -->
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  
+  <!-- โหลด Babel สำหรับคอมไพล์ JSX ในเบราว์เซอร์ -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  
+  <!-- โหลด Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap');
+    body { font-family: 'Sarabun', sans-serif; }
+    /* ปรับแต่ง Scrollbar สำหรับตาราง */
+    .custom-scrollbar::-webkit-scrollbar { height: 8px; width: 8px; }
+    .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 4px; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect, useMemo } = React;
+
+    // --- ไอคอนแบบ SVG (แปลงจาก Lucide React) ---
+    const Search = ({ className }) => (
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+        <circle cx="11" cy="11" r="8"></circle><line x1="21" x2="16.65" y1="21" y2="16.65"></line>
+      </svg>
+    );
+    const BarChart3 = ({ className }) => (
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+        <path d="M3 3v18h18"></path><path d="M18 17V9"></path><path d="M13 17V5"></path><path d="M8 17v-3"></path>
+      </svg>
+    );
+    const Loader2 = ({ className }) => (
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+        <path d="M21 12a9 9 0 1 1-6.219-8.56"></path>
+      </svg>
+    );
+    const LayoutDashboard = ({ className }) => (
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+        <rect width="7" height="9" x="3" y="3" rx="1"></rect><rect width="7" height="5" x="14" y="3" rx="1"></rect>
+        <rect width="7" height="9" x="14" y="12" rx="1"></rect><rect width="7" height="5" x="3" y="16" rx="1"></rect>
+      </svg>
+    );
+    const Trophy = ({ className }) => (
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+        <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"></path><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"></path>
+        <path d="M4 22h16"></path><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"></path>
+        <path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"></path><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"></path>
+      </svg>
+    );
+    const TrendingUp = ({ className }) => (
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+        <polyline points="22 7 13.5 15.5 8.5 10.5 2 17"></polyline><polyline points="16 7 22 7 22 13"></polyline>
+      </svg>
+    );
+    const TrendingDown = ({ className }) => (
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+        <polyline points="22 17 13.5 8.5 8.5 13.5 2 7"></polyline><polyline points="16 17 22 17 22 11"></polyline>
+      </svg>
+    );
+    const MenuIcon = ({ className }) => (
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+        <line x1="4" x2="20" y1="12" y2="12"></line><line x1="4" x2="20" y1="6" y2="6"></line><line x1="4" x2="20" y1="18" y2="18"></line>
+      </svg>
+    );
+    const XIcon = ({ className }) => (
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+        <line x1="18" x2="6" y1="6" y2="18"></line><line x1="6" x2="18" y1="6" y2="18"></line>
+      </svg>
+    );
+    const TableIcon = ({ className }) => (
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+        <path d="M12 3v18"></path><rect width="18" height="18" x="3" y="3" rx="2"></rect><path d="M3 9h18"></path><path d="M3 15h18"></path>
+      </svg>
+    );
+
+    // --- ข้อมูลและฟังก์ชันหลัก ---
+    const WORK_CATEGORIES = [
+      "มรดก", "จดทะเบียน น.ส.3", "จดทะเบียนสิ่งปลูกสร้าง", "รังวัด", 
+      "คนต่างด้าว", "มาตรา 84", "ออกโฉนดที่ดิน", "ออก น.ส.3 ก. / น.ส.3", 
+      "ออกใบแทน", "งานเพิกถอน", "จัดสรรที่ดิน", "อาคารชุด", 
+      "ออกหนังสือกรรมสิทธิ์ห้องชุด", "จดทะเบียนนิติบุคคลฯ", "จดทะเบียนเปลี่ยนแปลงข้อบังคับ", "งานร้องเรียน / อื่น ๆ"
+    ];
+
+    const DATA_SOURCES = {
+      pending: "https://docs.google.com/spreadsheets/d/e/2PACX-1vT4E5elVevg9-qqxyxZXHq1GlK6AC5NA_X0Mk5qZi7tYW1ifev7xuYd2rqey9eEb-8Mm6PSRSaoGwLl/pub?gid=0&single=true&output=csv",
+      incoming: "https://docs.google.com/spreadsheets/d/e/2PACX-1vT4E5elVevg9-qqxyxZXHq1GlK6AC5NA_X0Mk5qZi7tYW1ifev7xuYd2rqey9eEb-8Mm6PSRSaoGwLl/pub?gid=1048755901&single=true&output=csv",
+      completed: "https://docs.google.com/spreadsheets/d/e/2PACX-1vT4E5elVevg9-qqxyxZXHq1GlK6AC5NA_X0Mk5qZi7tYW1ifev7xuYd2rqey9eEb-8Mm6PSRSaoGwLl/pub?gid=130258979&single=true&output=csv",
+      carryOver: "https://docs.google.com/spreadsheets/d/e/2PACX-1vT4E5elVevg9-qqxyxZXHq1GlK6AC5NA_X0Mk5qZi7tYW1ifev7xuYd2rqey9eEb-8Mm6PSRSaoGwLl/pub?gid=999202838&single=true&output=csv"
+    };
+
+    const parseCSV = (csvText) => {
+      const rows = [];
+      let currentRow = [];
+      let currentCell = '';
+      let inQuotes = false;
+      
+      for (let i = 0; i < csvText.length; i++) {
+        const char = csvText[i];
+        if (char === '"') {
+          inQuotes = !inQuotes;
+        } else if (char === ',' && !inQuotes) {
+          currentRow.push(currentCell.trim());
+          currentCell = '';
+        } else if (char === '\n' && !inQuotes) {
+          currentRow.push(currentCell.trim());
+          if (currentRow.join('').trim() !== '') rows.push(currentRow);
+          currentRow = [];
+          currentCell = '';
+        } else {
+          currentCell += char;
+        }
+      }
+      if (currentCell || currentRow.length > 0) {
+        currentRow.push(currentCell.trim());
+        if (currentRow.join('').trim() !== '') rows.push(currentRow);
+      }
+      return rows;
+    };
+
+    function App() {
+      const [activeTab, setActiveTab] = useState('summary');
+      const [allData, setAllData] = useState({ pending: [], incoming: [], completed: [], carryOver: [] });
+      const [loading, setLoading] = useState(true);
+      const [error, setError] = useState(null);
+      
+      // States สำหรับ Summary Tab (ใช้เชื่อมกันทั้งการ์ดและตารางในหน้าสรุป)
+      const [summaryFilters, setSummaryFilters] = useState({ office: 'all', category: 'all' });
+      
+      // ช่องค้นหาในดรอปดาวน์ (แยกกันเพื่อไม่ให้พิมพ์ช่องนึงแล้วไปโผล่อีกช่องนึง)
+      const [summaryOfficeSearch, setSummaryOfficeSearch] = useState('');
+      const [detailOfficeSearch, setDetailOfficeSearch] = useState('');
+      
+      // States สำหรับ Tabs ทั่วไป (งานค้าง, รับใหม่, ฯลฯ)
+      const [tabOffice, setTabOffice] = useState('all');
+      const [tabOfficeSearch, setTabOfficeSearch] = useState('');
+      const [rankingCategory, setRankingCategory] = useState('total');
+
+      const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+      useEffect(() => {
+        fetchAllData();
+      }, []);
+
+      useEffect(() => {
+        setRankingCategory('total');
+      }, [activeTab]);
+
+      const formatParsedRows = (parsedRows) => {
+        return parsedRows.slice(1).map((row) => {
+          let officeTotal = 0;
+          const rowData = {
+            officeId: parseInt(row[0]?.replace(/,/g, '')) || 0,
+            officeName: row[1] || 'ไม่ระบุชื่อ',
+            categories: {}
+          };
+
+          for (let i = 0; i < 16; i++) {
+            const val = parseInt((row[i + 2] || '0').replace(/,/g, '')) || 0;
+            rowData.categories[WORK_CATEGORIES[i]] = val;
+            officeTotal += val;
+          }
+          rowData.total = officeTotal;
+          return rowData;
+        }).filter(row => row.officeName !== 'ไม่ระบุชื่อ');
+      };
+
+      const fetchAllData = async () => {
+        setLoading(true);
+        setError(null);
+        try {
+          const fetchCSV = async (url) => {
+            const res = await fetch(url);
+            if (!res.ok) throw new Error('Network error');
+            const text = await res.text();
+            return formatParsedRows(parseCSV(text));
+          };
+
+          const [pending, incoming, completed, carryOver] = await Promise.all([
+            fetchCSV(DATA_SOURCES.pending),
+            fetchCSV(DATA_SOURCES.incoming),
+            fetchCSV(DATA_SOURCES.completed),
+            fetchCSV(DATA_SOURCES.carryOver)
+          ]);
+
+          setAllData({ pending, incoming, completed, carryOver });
+        } catch (err) {
+          console.error(err);
+          setError('ไม่สามารถดึงข้อมูลจาก Google Sheets ได้ กรุณาตรวจสอบลิงก์หรือการตั้งค่าการแชร์');
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      const currentData = useMemo(() => allData[activeTab] || [], [allData, activeTab]);
+
+      const uniqueOffices = useMemo(() => {
+        if (!allData.pending.length) return [];
+        const offices = [];
+        const seen = new Set();
+        
+        for (const row of allData.pending) {
+          if (!seen.has(row.officeName)) {
+            seen.add(row.officeName);
+            offices.push(row.officeName);
+          }
+        }
+        return offices;
+      }, [allData.pending]);
+
+      // คำนวณยอดรวมสำหรับการ์ด 4 ใบ
+      const summaryTotals = useMemo(() => {
+        const calcTotal = (dataset) => {
+          let total = 0;
+          dataset.forEach(row => {
+            if (summaryFilters.office !== 'all' && row.officeName !== summaryFilters.office) return;
+            if (summaryFilters.category !== 'all') {
+              total += (row.categories[summaryFilters.category] || 0);
+            } else {
+              total += row.total;
+            }
+          });
+          return total;
+        };
+
+        return {
+          pending: calcTotal(allData.pending),
+          incoming: calcTotal(allData.incoming),
+          completed: calcTotal(allData.completed),
+          carryOver: calcTotal(allData.carryOver)
+        };
+      }, [allData, summaryFilters]);
+
+      // คำนวณยอดรวมสำหรับกราฟแท็บรายหมวดหมู่ (หน้าอื่นๆ)
+      const tabTotals = useMemo(() => {
+        if(activeTab === 'summary') return { totals: {}, grandTotal: 0, officeCount: 0 };
+        const totals = {};
+        WORK_CATEGORIES.forEach(cat => totals[cat] = 0);
+        let grandTotal = 0;
+        let officeCount = 0;
+
+        currentData.forEach(row => {
+          if (tabOffice === 'all' || row.officeName === tabOffice) {
+            officeCount++;
+            WORK_CATEGORIES.forEach(cat => {
+              totals[cat] += row.categories[cat] || 0;
+              grandTotal += row.categories[cat] || 0;
+            });
+          }
+        });
+
+        return { totals, grandTotal, officeCount };
+      }, [currentData, tabOffice, activeTab]);
+
+      // จัดอันดับ
+      const { top10, bottom10 } = useMemo(() => {
+        if (!currentData.length || activeTab === 'summary') return { top10: [], bottom10: [] };
+        const sortedData = [...currentData].sort((a, b) => {
+          const valA = rankingCategory === 'total' ? a.total : (a.categories[rankingCategory] || 0);
+          const valB = rankingCategory === 'total' ? b.total : (b.categories[rankingCategory] || 0);
+          return valB - valA; 
+        });
+        return {
+          top10: sortedData.slice(0, 10),
+          bottom10: [...sortedData].reverse().slice(0, 10) 
+        };
+      }, [currentData, rankingCategory, activeTab]);
+
+      // --- ประมวลผลข้อมูลสำหรับตารางรายละเอียดรายสำนักงาน (เชื่อมกับ summaryFilters.office) ---
+      const officeDetailData = useMemo(() => {
+        const getCategoryValue = (dataset, category) => {
+          if (summaryFilters.office === 'all') {
+            // ถ้ารวมทุกสำนักงาน ให้หาผลรวมของทุกแถวในหมวดหมู่นั้นๆ
+            return dataset.reduce((sum, row) => sum + (row.categories ? (row.categories[category] || 0) : 0), 0);
+          } else {
+            // ถ้าเลือกสำนักงานเฉพาะ ดึงข้อมูลสำนักงานนั้น
+            const officeRow = dataset.find(r => r.officeName === summaryFilters.office);
+            return officeRow && officeRow.categories ? (officeRow.categories[category] || 0) : 0;
+          }
+        };
+
+        return WORK_CATEGORIES.map(cat => ({
+          category: cat,
+          pending: getCategoryValue(allData.pending, cat),
+          incoming: getCategoryValue(allData.incoming, cat),
+          completed: getCategoryValue(allData.completed, cat),
+          carryOver: getCategoryValue(allData.carryOver, cat)
+        }));
+      }, [allData, summaryFilters.office]);
+
+      const officeDetailTotals = useMemo(() => {
+        return officeDetailData.reduce((acc, row) => ({
+          pending: acc.pending + row.pending,
+          incoming: acc.incoming + row.incoming,
+          completed: acc.completed + row.completed,
+          carryOver: acc.carryOver + row.carryOver
+        }), { pending: 0, incoming: 0, completed: 0, carryOver: 0 });
+      }, [officeDetailData]);
+
+      const getBarColor = (index) => {
+        const colors = ['bg-blue-500', 'bg-emerald-500', 'bg-violet-500', 'bg-amber-500', 'bg-rose-500', 'bg-cyan-500'];
+        return colors[index % colors.length];
+      };
+
+      const tabsList = [
+        { id: 'summary', label: 'สรุปภาพรวม', icon: LayoutDashboard },
+        { id: 'pending', label: 'งานค้าง (ยกมา)', icon: BarChart3 },
+        { id: 'incoming', label: 'งานเกิด (รับใหม่)', icon: BarChart3 },
+        { id: 'completed', label: 'งานเสร็จ', icon: BarChart3 },
+        { id: 'carryOver', label: 'ค้างยกไป', icon: BarChart3 }
+      ];
+
+      const activeTabLabel = tabsList.find(t => t.id === activeTab)?.label || '';
+
+      return (
+        <div className="min-h-screen bg-slate-50 font-sans text-slate-800 pb-12 flex flex-col justify-between relative overflow-hidden">
+          
+          {/* Overlay สำหรับ Sidebar */}
+          {isSidebarOpen && (
+            <div 
+              className="fixed inset-0 bg-black/60 z-40 lg:hidden transition-opacity"
+              onClick={() => setIsSidebarOpen(false)}
+            ></div>
+          )}
+
+          {/* Sidebar สำหรับหน้าจอขนาดเล็ก */}
+          <div className={`fixed inset-y-0 left-0 w-72 bg-[#1e3a8a] z-50 transform transition-transform duration-300 ease-in-out lg:hidden flex flex-col ${isSidebarOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full'}`}>
+            <div className="flex items-center justify-between p-5 border-b border-blue-800/50">
+              <span className="text-white font-bold text-lg">เมนูรายงานสถิติ</span>
+              <button onClick={() => setIsSidebarOpen(false)} className="text-blue-200 hover:text-white p-1 rounded-md hover:bg-blue-800 transition-colors">
+                <XIcon className="w-6 h-6" />
+              </button>
+            </div>
+            <div className="flex flex-col p-3 gap-2 overflow-y-auto">
+              {tabsList.map(tab => (
+                <button
+                  key={`sidebar-${tab.id}`}
+                  onClick={() => { setActiveTab(tab.id); setIsSidebarOpen(false); }}
+                  className={`px-4 py-3.5 rounded-lg transition-all font-medium flex items-center gap-3 text-left ${
+                    activeTab === tab.id 
+                      ? 'bg-blue-600 text-white shadow-md' 
+                      : 'text-blue-100 hover:bg-blue-800 hover:text-white'
+                  }`}
+                >
+                  {tab.icon && <tab.icon className="w-5 h-5" />}
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <header className="bg-blue-800 text-white shadow-md sticky top-0 z-20">
+              <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 sm:py-4">
+                <div className="flex justify-between items-center gap-4">
+                  
+                  <div className="flex items-center gap-3">
+                    {/* ปุ่ม Hamburger */}
+                    <button 
+                      className="lg:hidden p-2 -ml-2 text-blue-100 hover:text-white hover:bg-blue-700 rounded-lg transition-colors"
+                      onClick={() => setIsSidebarOpen(true)}
+                    >
+                      <MenuIcon className="w-6 h-6" />
+                    </button>
+                    
+                    <div className="p-2 bg-white/10 rounded-lg hidden sm:block">
+                      <LayoutDashboard className="w-6 h-6 text-blue-100" />
+                    </div>
+                    <div>
+                      <h1 className="text-lg sm:text-xl font-bold tracking-wide leading-tight">ปริมาณงานฝ่ายทะเบียน สำนักงานที่ดิน</h1>
+                      <p className="text-blue-200 text-xs sm:text-sm mt-0.5">กรมที่ดิน กระทรวงมหาดไทย</p>
+                    </div>
+                  </div>
+                  
+                  {/* เมนูแบบแนวนอน */}
+                  <div className="hidden lg:flex flex-wrap justify-center bg-blue-900/50 p-1.5 rounded-lg text-sm gap-1">
+                    {tabsList.map(tab => (
+                      <button
+                        key={`header-${tab.id}`}
+                        onClick={() => setActiveTab(tab.id)}
+                        className={`px-3 py-2 rounded-md transition-all font-medium flex items-center gap-2 ${
+                          activeTab === tab.id 
+                            ? 'bg-white text-blue-800 shadow-sm' 
+                            : 'text-blue-100 hover:bg-blue-700/80 hover:text-white'
+                        }`}
+                      >
+                        {tab.icon && <tab.icon className="w-4 h-4" />}
+                        {tab.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </header>
+
+            <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6">
+              {loading ? (
+                <div className="flex flex-col items-center justify-center py-32 space-y-4">
+                  <Loader2 className="w-12 h-12 text-blue-600 animate-spin" />
+                  <p className="text-slate-500 font-medium">กำลังโหลดข้อมูลจาก Google Sheets...</p>
+                </div>
+              ) : error ? (
+                <div className="bg-red-50 border-l-4 border-red-500 p-6 rounded-r-xl shadow-sm">
+                  <h3 className="text-red-800 font-semibold text-lg">เกิดข้อผิดพลาด</h3>
+                  <p className="text-red-600 mt-1">{error}</p>
+                </div>
+              ) : activeTab === 'summary' ? (
+                <div className="space-y-6">
+                  {/* --- Section 1: สรุปภาพรวมปริมาณงาน (4 การ์ด) --- */}
+                  <section className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 sm:p-6 space-y-6">
+                    <div className="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-4 border-b border-slate-100 pb-6">
+                      <div className="flex items-center gap-2">
+                        <LayoutDashboard className="w-6 h-6 text-blue-600" />
+                        <h2 className="text-xl font-bold text-slate-800">สรุปภาพรวมปริมาณงาน</h2>
+                      </div>
+                      
+                      <div className="flex flex-col sm:flex-row gap-4 w-full xl:w-auto">
+                        <div className="flex flex-col gap-1 w-full sm:w-auto">
+                          <label className="text-xs font-semibold text-slate-500 uppercase">สำนักงานที่ดิน</label>
+                          <div className="flex flex-col sm:flex-row gap-2">
+                            <div className="relative w-full sm:w-40 xl:w-48">
+                              <div className="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none">
+                                <Search className="h-3.5 w-3.5 text-slate-400" />
+                              </div>
+                              <input
+                                type="text"
+                                placeholder="พิมพ์ค้นหาชื่อ..."
+                                className="block w-full pl-8 pr-2 py-2 border border-slate-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-sm shadow-sm"
+                                value={summaryOfficeSearch}
+                                onChange={(e) => setSummaryOfficeSearch(e.target.value)}
+                              />
+                            </div>
+                            <select 
+                              className="border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-blue-500 focus:border-blue-500 outline-none w-full sm:w-56 xl:w-64 shadow-sm"
+                              value={summaryFilters.office} // ใช้ State เดียวกัน
+                              onChange={(e) => setSummaryFilters(prev => ({ ...prev, office: e.target.value }))}
+                            >
+                              <option value="all">รวมทุกสำนักงานที่ดิน</option>
+                              {uniqueOffices
+                                .filter(office => office.toLowerCase().includes(summaryOfficeSearch.toLowerCase()))
+                                .map(office => (
+                                <option key={office} value={office}>{office}</option>
+                              ))}
+                            </select>
+                          </div>
+                        </div>
+                        
+                        <div className="flex flex-col gap-1 w-full sm:w-auto">
+                          <label className="text-xs font-semibold text-slate-500 uppercase">ประเภทงาน</label>
+                          <select 
+                            className="border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-blue-500 focus:border-blue-500 outline-none w-full sm:w-56 xl:w-64 shadow-sm h-[38px] mt-0 sm:mt-[2px]"
+                            value={summaryFilters.category}
+                            onChange={(e) => setSummaryFilters(prev => ({ ...prev, category: e.target.value }))}
+                          >
+                            <option value="all">รวมทุกประเภทงาน</option>
+                            {WORK_CATEGORIES.map(cat => (
+                              <option key={cat} value={cat}>{cat}</option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+                      <div className="bg-slate-50 rounded-xl p-6 border border-slate-200 shadow-sm relative overflow-hidden">
+                        <div className="absolute top-0 left-0 w-1 h-full bg-blue-500"></div>
+                        <h3 className="text-slate-500 font-medium text-sm mb-1">งานค้าง (ยกมา)</h3>
+                        <p className="text-3xl font-bold text-slate-800">{summaryTotals.pending.toLocaleString()}</p>
+                      </div>
+                      <div className="bg-slate-50 rounded-xl p-6 border border-slate-200 shadow-sm relative overflow-hidden">
+                        <div className="absolute top-0 left-0 w-1 h-full bg-emerald-500"></div>
+                        <h3 className="text-slate-500 font-medium text-sm mb-1">งานเกิด (รับใหม่)</h3>
+                        <p className="text-3xl font-bold text-slate-800">{summaryTotals.incoming.toLocaleString()}</p>
+                      </div>
+                      <div className="bg-slate-50 rounded-xl p-6 border border-slate-200 shadow-sm relative overflow-hidden">
+                        <div className="absolute top-0 left-0 w-1 h-full bg-violet-500"></div>
+                        <h3 className="text-slate-500 font-medium text-sm mb-1">งานเสร็จ</h3>
+                        <p className="text-3xl font-bold text-slate-800">{summaryTotals.completed.toLocaleString()}</p>
+                      </div>
+                      <div className="bg-slate-50 rounded-xl p-6 border border-slate-200 shadow-sm relative overflow-hidden">
+                        <div className="absolute top-0 left-0 w-1 h-full bg-amber-500"></div>
+                        <h3 className="text-slate-500 font-medium text-sm mb-1">ค้างยกไป</h3>
+                        <p className="text-3xl font-bold text-slate-800">{summaryTotals.carryOver.toLocaleString()}</p>
+                      </div>
+                    </div>
+                  </section>
+
+                  {/* --- Section 2: รายละเอียดข้อมูลรายสำนักงาน (ตาราง) --- */}
+                  <section className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 sm:p-6 space-y-6">
+                    <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border-b border-slate-100 pb-6">
+                      <div className="flex items-center gap-2">
+                        <TableIcon className="w-6 h-6 text-blue-600" />
+                        <h2 className="text-xl font-bold text-slate-800">
+                          {summaryFilters.office === 'all' ? 'รายละเอียด: รวมทุกสำนักงานที่ดิน' : `รายละเอียด: ${summaryFilters.office}`}
+                        </h2>
+                      </div>
+                      
+                      <div className="w-full md:w-auto">
+                        <div className="flex flex-col gap-1 w-full">
+                          <label className="text-xs font-semibold text-slate-500 uppercase">เลือกสำนักงานที่ดินเพื่อดูตาราง</label>
+                          <div className="flex flex-col sm:flex-row gap-2">
+                            <div className="relative w-full sm:w-48">
+                              <div className="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none">
+                                <Search className="h-3.5 w-3.5 text-slate-400" />
+                              </div>
+                              <input
+                                type="text"
+                                placeholder="พิมพ์ค้นหาชื่อ..."
+                                className="block w-full pl-8 pr-2 py-2 border border-slate-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-sm shadow-sm"
+                                value={detailOfficeSearch}
+                                onChange={(e) => setDetailOfficeSearch(e.target.value)}
+                              />
+                            </div>
+                            <select 
+                              className="border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-blue-500 focus:border-blue-500 outline-none w-full sm:w-64 shadow-sm"
+                              value={summaryFilters.office} // ใช้ State เดียวกันเพื่อ Link หากัน
+                              onChange={(e) => setSummaryFilters(prev => ({ ...prev, office: e.target.value }))}
+                            >
+                              <option value="all">รวมทุกสำนักงานที่ดิน</option>
+                              {uniqueOffices
+                                .filter(office => office.toLowerCase().includes(detailOfficeSearch.toLowerCase()))
+                                .map(office => (
+                                <option key={office} value={office}>{office}</option>
+                              ))}
+                            </select>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* ตารางแสดงข้อมูล */}
+                    <div className="overflow-x-auto custom-scrollbar border border-slate-200 rounded-lg shadow-sm">
+                      <table className="w-full text-[11px] sm:text-sm text-left">
+                        <thead className="text-[10px] sm:text-xs text-slate-700 uppercase bg-slate-100 border-b border-slate-200 leading-tight sm:leading-normal">
+                          <tr>
+                            <th className="px-1.5 sm:px-4 py-2 sm:py-3 font-bold sticky left-0 bg-slate-100 z-10 border-r border-slate-200 shadow-[1px_0_0_0_#e2e8f0] w-[35%] sm:w-auto">ประเภทงาน</th>
+                            <th className="px-1 sm:px-4 py-2 sm:py-3 font-bold text-center sm:text-right text-blue-700">
+                              <span className="sm:hidden">ค้าง<br/>มา</span>
+                              <span className="hidden sm:inline">งานค้าง (ยกมา)</span>
+                            </th>
+                            <th className="px-1 sm:px-4 py-2 sm:py-3 font-bold text-center sm:text-right text-emerald-700">
+                              <span className="sm:hidden">รับ<br/>ใหม่</span>
+                              <span className="hidden sm:inline">งานเกิด (รับใหม่)</span>
+                            </th>
+                            <th className="px-1 sm:px-4 py-2 sm:py-3 font-bold text-center sm:text-right text-violet-700">
+                              <span className="sm:hidden">เสร็จ</span>
+                              <span className="hidden sm:inline">งานเสร็จ</span>
+                            </th>
+                            <th className="px-1 sm:px-4 py-2 sm:py-3 font-bold text-center sm:text-right text-amber-700">
+                              <span className="sm:hidden">ยก<br/>ไป</span>
+                              <span className="hidden sm:inline">ค้างยกไป</span>
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
+                          {officeDetailData.map((row, index) => (
+                            <tr key={row.category} className="hover:bg-slate-50/80 transition-colors">
+                              <td className="px-1.5 sm:px-4 py-1.5 sm:py-3 font-medium text-slate-600 sticky left-0 bg-white border-r border-slate-100 shadow-[1px_0_0_0_#f1f5f9] whitespace-normal break-words leading-tight">
+                                {row.category}
+                              </td>
+                              <td className="px-1 sm:px-4 py-1.5 sm:py-3 text-center sm:text-right">{row.pending === 0 ? '-' : row.pending.toLocaleString()}</td>
+                              <td className="px-1 sm:px-4 py-1.5 sm:py-3 text-center sm:text-right">{row.incoming === 0 ? '-' : row.incoming.toLocaleString()}</td>
+                              <td className="px-1 sm:px-4 py-1.5 sm:py-3 text-center sm:text-right">{row.completed === 0 ? '-' : row.completed.toLocaleString()}</td>
+                              <td className="px-1 sm:px-4 py-1.5 sm:py-3 text-center sm:text-right font-medium">{row.carryOver === 0 ? '-' : row.carryOver.toLocaleString()}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                        <tfoot>
+                          <tr className="bg-slate-50 border-t-2 border-slate-200">
+                            <td className="px-1.5 sm:px-4 py-2 sm:py-3.5 font-bold text-slate-800 sticky left-0 bg-slate-50 border-r border-slate-200 shadow-[1px_0_0_0_#e2e8f0]">
+                              ยอดรวม<span className="hidden sm:inline">ทั้งหมด</span>
+                            </td>
+                            <td className="px-1 sm:px-4 py-2 sm:py-3.5 font-bold text-center sm:text-right text-blue-800">{officeDetailTotals.pending.toLocaleString()}</td>
+                            <td className="px-1 sm:px-4 py-2 sm:py-3.5 font-bold text-center sm:text-right text-emerald-800">{officeDetailTotals.incoming.toLocaleString()}</td>
+                            <td className="px-1 sm:px-4 py-2 sm:py-3.5 font-bold text-center sm:text-right text-violet-800">{officeDetailTotals.completed.toLocaleString()}</td>
+                            <td className="px-1 sm:px-4 py-2 sm:py-3.5 font-bold text-center sm:text-right text-amber-800">{officeDetailTotals.carryOver.toLocaleString()}</td>
+                          </tr>
+                        </tfoot>
+                      </table>
+                    </div>
+                  </section>
+                </div>
+              ) : (
+                // --- ส่วนแสดงผล Tabs ทั่วไป (งานค้าง, เกิด, เสร็จ, ยกไป) ---
+                <>
+                  <section className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 sm:p-6">
+                    <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 mb-6 border-b border-slate-100 pb-4">
+                      
+                      <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto">
+                        <BarChart3 className="w-5 h-5 text-blue-600 flex-shrink-0" />
+                        <h2 className="text-lg font-bold text-slate-800 truncate">
+                          {tabOffice === 'all' 
+                            ? `สรุปผลรวมทั้งประเทศ (${tabTotals.officeCount} สำนักงาน)` 
+                            : `สรุปข้อมูล: ${tabOffice}`}
+                        </h2>
+                        <span className="bg-blue-100 text-blue-800 text-xs sm:text-sm font-semibold px-2.5 py-1 rounded-full whitespace-nowrap">
+                          {activeTabLabel}
+                        </span>
+                      </div>
+                      
+                      <div className="flex flex-col sm:flex-row items-center gap-4 w-full lg:w-auto">
+                        <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+                          <div className="relative w-full sm:w-40 xl:w-48">
+                            <div className="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none">
+                              <Search className="h-3.5 w-3.5 text-slate-400" />
+                            </div>
+                            <input
+                              type="text"
+                              placeholder="พิมพ์ค้นหาชื่อ..."
+                              className="block w-full pl-8 pr-2 py-2 border border-slate-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-sm shadow-sm bg-white"
+                              value={tabOfficeSearch}
+                              onChange={(e) => setTabOfficeSearch(e.target.value)}
+                            />
+                          </div>
+                          <select 
+                            className="border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-blue-500 focus:border-blue-500 outline-none w-full sm:w-56 xl:w-64 bg-white shadow-sm"
+                            value={tabOffice}
+                            onChange={(e) => setTabOffice(e.target.value)}
+                          >
+                            <option value="all">รวมทุกสำนักงานที่ดิน</option>
+                            {uniqueOffices
+                              .filter(office => office.toLowerCase().includes(tabOfficeSearch.toLowerCase()))
+                              .map(office => (
+                              <option key={office} value={office}>{office}</option>
+                            ))}
+                          </select>
+                        </div>
+
+                        <div className="text-right w-full sm:w-auto flex justify-between sm:block border-t sm:border-t-0 pt-3 sm:pt-0 border-slate-100 min-w-[120px]">
+                          <p className="text-sm text-slate-500 font-medium">รวม{activeTabLabel}</p>
+                          <p className="text-xl sm:text-2xl font-bold text-blue-700">{tabTotals.grandTotal.toLocaleString()}</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+                      {(() => {
+                        const maxVal = Math.max(...Object.values(tabTotals.totals));
+                        return WORK_CATEGORIES.map((cat, idx) => {
+                          const val = tabTotals.totals[cat];
+                          const percentage = maxVal === 0 ? 0 : (val / maxVal) * 100;
+                          return (
+                            <div key={cat} className="bg-slate-50 p-3 sm:p-4 rounded-lg border border-slate-100 hover:border-blue-200 transition-colors">
+                              <div className="flex justify-between items-end mb-2">
+                                <span className="text-xs sm:text-sm font-medium text-slate-600 truncate pr-2" title={cat}>{cat}</span>
+                                <span className="text-sm sm:text-base font-bold text-slate-800">{val.toLocaleString()}</span>
+                              </div>
+                              <div className="w-full bg-slate-200 rounded-full h-2">
+                                <div 
+                                  className={`h-2 rounded-full ${getBarColor(idx)}`} 
+                                  style={{ width: `${percentage}%` }}
+                                ></div>
+                              </div>
+                            </div>
+                          );
+                        });
+                      })()}
+                    </div>
+                  </section>
+
+                  {/* --- Section จัดอันดับ 10 สำนักงานที่ดิน --- */}
+                  <section className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 sm:p-6">
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4 border-b border-slate-100 pb-4">
+                      <div className="flex items-center gap-2">
+                        <Trophy className="w-6 h-6 text-amber-500 flex-shrink-0" />
+                        <h3 className="text-lg font-bold text-slate-800">
+                          จัดอันดับ 10 สำนักงานที่ดิน
+                          <span className="text-slate-500 font-normal ml-2">({activeTabLabel})</span>
+                        </h3>
+                      </div>
+                      <div className="w-full sm:w-auto flex flex-col sm:flex-row items-start sm:items-center gap-2">
+                        <label className="text-sm font-medium text-slate-500 whitespace-nowrap">ตัวกรอง:</label>
+                        <select
+                          className="border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-blue-500 focus:border-blue-500 bg-slate-50 w-full sm:w-64 outline-none"
+                          value={rankingCategory}
+                          onChange={(e) => setRankingCategory(e.target.value)}
+                        >
+                          <option value="total">รวมทุกประเภทงาน</option>
+                          {WORK_CATEGORIES.map(cat => (
+                            <option key={cat} value={cat}>งาน: {cat}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8">
+                      <div className="bg-slate-50 p-4 sm:p-5 rounded-xl border border-slate-100">
+                        <h4 className="font-semibold text-rose-600 mb-4 flex items-center gap-2 pb-2 border-b border-rose-100">
+                          <TrendingUp className="w-5 h-5 flex-shrink-0" /> ปริมาณงานมากที่สุด 10 อันดับ
+                        </h4>
+                        <div className="space-y-2 sm:space-y-3">
+                          {top10.map((office, idx) => {
+                            const val = rankingCategory === 'total' ? office.total : (office.categories[rankingCategory] || 0);
+                            return (
+                              <div key={`top-${idx}`} className="flex justify-between items-center bg-white p-2.5 sm:p-3 rounded-lg border border-slate-100 shadow-sm">
+                                <div className="flex items-center gap-2 sm:gap-3 overflow-hidden">
+                                  <span className="flex items-center justify-center w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-rose-100 text-rose-700 text-[10px] sm:text-xs font-bold flex-shrink-0">{idx + 1}</span>
+                                  <span className="text-xs sm:text-sm font-medium text-slate-700 truncate" title={office.officeName}>{office.officeName}</span>
+                                </div>
+                                <span className="font-bold text-slate-800 text-sm sm:text-base ml-2">{val.toLocaleString()}</span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      <div className="bg-slate-50 p-4 sm:p-5 rounded-xl border border-slate-100">
+                        <h4 className="font-semibold text-emerald-600 mb-4 flex items-center gap-2 pb-2 border-b border-emerald-100">
+                          <TrendingDown className="w-5 h-5 flex-shrink-0" /> ปริมาณงานน้อยที่สุด 10 อันดับ
+                        </h4>
+                        <div className="space-y-2 sm:space-y-3">
+                          {bottom10.map((office, idx) => {
+                            const val = rankingCategory === 'total' ? office.total : (office.categories[rankingCategory] || 0);
+                            return (
+                              <div key={`bot-${idx}`} className="flex justify-between items-center bg-white p-2.5 sm:p-3 rounded-lg border border-slate-100 shadow-sm">
+                                <div className="flex items-center gap-2 sm:gap-3 overflow-hidden">
+                                  <span className="flex items-center justify-center w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-emerald-100 text-emerald-700 text-[10px] sm:text-xs font-bold flex-shrink-0">{idx + 1}</span>
+                                  <span className="text-xs sm:text-sm font-medium text-slate-700 truncate" title={office.officeName}>{office.officeName}</span>
+                                </div>
+                                <span className="font-bold text-slate-800 text-sm sm:text-base ml-2">{val.toLocaleString()}</span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </div>
+                  </section>
+                </>
+              )}
+            </main>
+          </div>
+        </div>
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+
+  <!-- เพิ่ม Service Worker Registration ก่อนปิด body -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js')
+          .then(registration => {
+            console.log('ServiceWorker registration successful with scope: ', registration.scope);
+          })
+          .catch(err => {
+            console.log('ServiceWorker registration failed: ', err);
+          });
+      });
+    }
+  </script>
+</body>
+</html>
