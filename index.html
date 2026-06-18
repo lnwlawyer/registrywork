@@ -5,17 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ปริมาณงานฝ่ายทะเบียน สำนักงานที่ดิน</title>
   
-  <!-- เพิ่ม PWA Meta Tags -->
-  <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#1e3a8a">
-  <link rel="apple-touch-icon" href="icon-192.png">
-  
   <!-- โหลด React และ ReactDOM -->
   <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
   
   <!-- โหลด Babel สำหรับคอมไพล์ JSX ในเบราว์เซอร์ -->
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone@7/babel.min.js"></script>
   
   <!-- โหลด Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -32,7 +27,7 @@
 <body>
   <div id="root"></div>
 
-  <script type="text/babel">
+  <script type="text/babel" data-type="module">
     const { useState, useEffect, useMemo } = React;
 
     // --- ไอคอนแบบ SVG (แปลงจาก Lucide React) ---
@@ -140,14 +135,13 @@
       const [loading, setLoading] = useState(true);
       const [error, setError] = useState(null);
       
-      // States สำหรับ Summary Tab (ใช้เชื่อมกันทั้งการ์ดและตารางในหน้าสรุป)
+      // States สำหรับ Summary Tab
       const [summaryFilters, setSummaryFilters] = useState({ office: 'all', category: 'all' });
       
-      // ช่องค้นหาในดรอปดาวน์ (แยกกันเพื่อไม่ให้พิมพ์ช่องนึงแล้วไปโผล่อีกช่องนึง)
       const [summaryOfficeSearch, setSummaryOfficeSearch] = useState('');
       const [detailOfficeSearch, setDetailOfficeSearch] = useState('');
       
-      // States สำหรับ Tabs ทั่วไป (งานค้าง, รับใหม่, ฯลฯ)
+      // States สำหรับ Tabs ทั่วไป
       const [tabOffice, setTabOffice] = useState('all');
       const [tabOfficeSearch, setTabOfficeSearch] = useState('');
       const [rankingCategory, setRankingCategory] = useState('total');
@@ -247,7 +241,7 @@
         };
       }, [allData, summaryFilters]);
 
-      // คำนวณยอดรวมสำหรับกราฟแท็บรายหมวดหมู่ (หน้าอื่นๆ)
+      // คำนวณยอดรวมสำหรับกราฟแท็บรายหมวดหมู่
       const tabTotals = useMemo(() => {
         if(activeTab === 'summary') return { totals: {}, grandTotal: 0, officeCount: 0 };
         const totals = {};
@@ -282,14 +276,11 @@
         };
       }, [currentData, rankingCategory, activeTab]);
 
-      // --- ประมวลผลข้อมูลสำหรับตารางรายละเอียดรายสำนักงาน (เชื่อมกับ summaryFilters.office) ---
       const officeDetailData = useMemo(() => {
         const getCategoryValue = (dataset, category) => {
           if (summaryFilters.office === 'all') {
-            // ถ้ารวมทุกสำนักงาน ให้หาผลรวมของทุกแถวในหมวดหมู่นั้นๆ
             return dataset.reduce((sum, row) => sum + (row.categories ? (row.categories[category] || 0) : 0), 0);
           } else {
-            // ถ้าเลือกสำนักงานเฉพาะ ดึงข้อมูลสำนักงานนั้น
             const officeRow = dataset.find(r => r.officeName === summaryFilters.office);
             return officeRow && officeRow.categories ? (officeRow.categories[category] || 0) : 0;
           }
@@ -448,7 +439,7 @@
                             </div>
                             <select 
                               className="border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-blue-500 focus:border-blue-500 outline-none w-full sm:w-56 xl:w-64 shadow-sm"
-                              value={summaryFilters.office} // ใช้ State เดียวกัน
+                              value={summaryFilters.office}
                               onChange={(e) => setSummaryFilters(prev => ({ ...prev, office: e.target.value }))}
                             >
                               <option value="all">รวมทุกสำนักงานที่ดิน</option>
@@ -529,7 +520,7 @@
                             </div>
                             <select 
                               className="border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-blue-500 focus:border-blue-500 outline-none w-full sm:w-64 shadow-sm"
-                              value={summaryFilters.office} // ใช้ State เดียวกันเพื่อ Link หากัน
+                              value={summaryFilters.office}
                               onChange={(e) => setSummaryFilters(prev => ({ ...prev, office: e.target.value }))}
                             >
                               <option value="all">รวมทุกสำนักงานที่ดิน</option>
@@ -751,21 +742,6 @@
 
     const root = ReactDOM.createRoot(document.getElementById('root'));
     root.render(<App />);
-  </script>
-
-  <!-- เพิ่ม Service Worker Registration ก่อนปิด body -->
-  <script>
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('sw.js')
-          .then(registration => {
-            console.log('ServiceWorker registration successful with scope: ', registration.scope);
-          })
-          .catch(err => {
-            console.log('ServiceWorker registration failed: ', err);
-          });
-      });
-    }
   </script>
 </body>
 </html>
