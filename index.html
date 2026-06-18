@@ -5,12 +5,33 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ปริมาณงานฝ่ายทะเบียน สำนักงานที่ดิน</title>
   
+  <!-- โค้ดบังคับล้างแคช Service Worker ตัวเก่าที่ทำให้หน้าจอขาว -->
+  <script>
+    window.addEventListener('load', function() {
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then(function(registrations) {
+          let isUnregistered = false;
+          for(let registration of registrations) {
+            registration.unregister();
+            isUnregistered = true;
+          }
+          if(isUnregistered) {
+            console.log("ล้างแคช Service Worker สำเร็จ กำลังรีโหลดหน้าเว็บใหม่...");
+            window.location.reload(true);
+          }
+        }).catch(function(error) {
+          console.warn("ข้ามการจัดการ Service Worker เนื่องจากสภาพแวดล้อมไม่รองรับ: ", error);
+        });
+      }
+    });
+  </script>
+
   <!-- โหลด React และ ReactDOM -->
   <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
   
-  <!-- โหลด Babel สำหรับคอมไพล์ JSX ในเบราว์เซอร์ -->
-  <script src="https://unpkg.com/@babel/standalone@7/babel.min.js"></script>
+  <!-- โหลด Babel สำหรับคอมไพล์ JSX (ล็อคเวอร์ชัน 7.23.0 เพื่อความเสถียรสูงสุด) -->
+  <script src="https://unpkg.com/@babel/standalone@7.23.0/babel.min.js"></script>
   
   <!-- โหลด Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -27,8 +48,8 @@
 <body>
   <div id="root"></div>
 
-  <!-- เปลี่ยนกลับมาใช้ type="text/babel" ปกติ เพื่อไม่ให้ติดเรื่อง Module Policy บน GitHub Pages -->
-  <script type="text/babel">
+  <!-- กำหนด data-presets="react" เพื่อให้ Babel รู้ว่านี่คือ React -->
+  <script type="text/babel" data-presets="react">
     const { useState, useEffect, useMemo } = React;
 
     // --- ไอคอนแบบ SVG (แปลงจาก Lucide React) ---
